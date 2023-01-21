@@ -8,28 +8,30 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const moralis_1 = __importDefault(require("moralis"));
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function validateAuthData(authData) {
-    const { signature, data } = authData;
+    const { message, signature, network, id, authId } = authData;
     return moralis_1.default.Auth.verify({
-        message: data,
+        message,
         signature,
-        networkType: 'evm',
+        network,
     })
         .then((result) => {
-        const authenticated = result.toJSON();
-        authData.chainId = result.result.chain.decimal;
-        authData.nonce = authenticated.nonce;
-        authData.address = result.result.address.checksum;
-        authData.version = authenticated.version;
-        authData.domain = authenticated.domain;
-        authData.expirationTime = authenticated.expirationTime;
-        authData.notBefore = authenticated.notBefore;
-        authData.resources = authenticated.resources;
-        authData.statement = authenticated.statement;
-        authData.uri = authenticated.uri;
-        authData.moralisProfileId = authenticated.profileId;
+        const data = result.toJSON();
+        if (id === data.profileId && authId === data.id) {
+            authData.chainId = result.result.chain.decimal;
+            authData.nonce = data.nonce;
+            authData.address = result.result.address.checksum;
+            authData.version = data.version;
+            authData.domain = data.domain;
+            authData.expirationTime = data.expirationTime;
+            authData.notBefore = data.notBefore;
+            authData.resources = data.resources;
+            authData.statement = data.statement;
+            authData.uri = data.uri;
+            return;
+        }
+        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Moralis auth failed, invalid data');
     })
         .catch(() => {
-        // @ts-ignore (see note at top of file)
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Moralis auth failed, invalid data');
     });
 }
